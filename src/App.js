@@ -6,19 +6,73 @@ import GridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import Compoment1 from "./Components/Compoment1";
 
+const ItemTypes = {
+  NAVBAR_ITEM: "navbarItem",
+};
+
+const DraggableNavbarItem = ({ id, name, style }) => {
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: ItemTypes.NAVBAR_ITEM,
+    item: { id },
+    collect: (monitor) => ({
+      isDragging: !!monitor.isDragging(),
+    }),
+  }));
+
+  return (
+    <div
+      ref={drag}
+      style={{
+        ...style,
+        opacity: isDragging ? 0.5 : 1,
+        cursor: "move",
+      }}
+    >
+      {name}
+    </div>
+  );
+};
+
+const DroppableGridItem = ({ id, onDrop, children, style }) => {
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: ItemTypes.NAVBAR_ITEM,
+    drop: (item) => onDrop(item.id, id),
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+    }),
+  }));
+
+  return (
+    <div
+      ref={drop}
+      style={{
+        height: "100%",
+        backgroundColor: style.backgroundColor,
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
 function App() {
   const layout = [];
   const numberOfItems = 10; // Define the number of items
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isDrag, setIsDrag] = useState(true);
-
-  // Callback function to handle data received from the
-  //child component
-  const handleCallback = () => {
-    // Update the name in the component's state
-    this.setState({ name: "Item 2" });
-  };
+  const [navbarItems, setNavbarItems] = useState([
+    { id: 1, name: "item1" },
+    { id: 2, name: "item2" },
+    { id: 3, name: "item3" },
+    { id: 4, name: "item4" },
+    { id: 5, name: "item5" },
+    { id: 6, name: "item6" },
+    { id: 7, name: "item7" },
+    { id: 8, name: "item8" },
+    { id: 9, name: "item9" },
+    { id: 10, name: "item10" },
+  ]);
 
   useEffect(() => {
     var newItems = [];
@@ -32,9 +86,18 @@ function App() {
     }
     setItems(newItems);
   }, []);
-  const handleLayoutChange = (newLayout) => {
-    console.log(newLayout);
+
+  const handleDrop = (draggedId, droppedId) => {
+    const draggedItem = navbarItems.find((item) => item.id === draggedId);
+    const newItems = items.map((item) => {
+      if (item.id === droppedId) {
+        return { ...item, name: draggedItem.name };
+      }
+      return item;
+    });
+    setItems(newItems);
   };
+
   const convertToJson = () => {
     // Hàm để lấy thông tin vị trí, kích thước, loại thẻ HTML và màu sắc của các widget và in ra JSON
     const items = document.querySelectorAll(".react-grid-layout");
@@ -126,35 +189,44 @@ function App() {
   };
 
   return (
-    
-    <div>
-      <GridLayout
-        className="layout"
-        layout={layout}
-        cols={12}
-        rowHeight={30}
-        isDraggable={isDrag}
-        width={1200}
-      >
-        {items.map((item, i) => (
-          <div
-            style={item.style}
-            onClick={() => onSelectedItem(item, i)}
-            key={i}
-            data-grid={{ x: 1, y: 1, w: 2, h: 2 }}
+    <DndProvider backend={HTML5Backend}>
+      <div className="parent">
+        <div className="navbar">
+          {navbarItems.map((item) => (
+            <div className="navbar vertical" key={item.id}>
+              <DraggableNavbarItem id={item.id} name={item.name} />
+            </div>
+          ))}
+        </div>
+        <div style={{ width: "1200px" }}>
+          <GridLayout
+            className="layout"
+            layout={layout}
+            cols={12}
+            rowHeight={30}
+            isDraggable={isDrag}
+            width={1200}
+            style={{ backgroundColor: "lightgray" }}
           >
-            <Compoment1
-              onChildClick={() => handleLayoutChange(item)}
-              name={item.name}
-            />
-          </div>
-        ))}
-      </GridLayout>
-      <button onClick={convertToJson}>GetParent</button>
-      <button onClick={getItemDetails}>GetAllItems</button>
-      <button onClick={setDrag}>SetDrag</button>
-      <button onClick={handleCallback}>setName</button>
-    </div>
+            {items.map((item, i) => (
+              <div
+                style={item.style}
+                onClick={() => onSelectedItem(item, i)}
+                key={i}
+                data-grid={{ x: 1, y: 1, w: 2, h: 2 }}
+              >
+                <DroppableGridItem style={item.style} id={item.id} onDrop={handleDrop}>
+                  <Compoment1 name={item.name} />
+                </DroppableGridItem>
+              </div>
+            ))}
+          </GridLayout>
+          <button onClick={convertToJson}>GetParent</button>
+          <button onClick={getItemDetails}>GetAllItems</button>
+          <button onClick={setDrag}>SetDrag</button>
+        </div>
+      </div>
+    </DndProvider>
   );
 }
 
