@@ -10,51 +10,6 @@ const ItemTypes = {
   NAVBAR_ITEM: "navbarItem",
 };
 
-const DraggableNavbarItem = ({ id, name, style }) => {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: ItemTypes.NAVBAR_ITEM,
-    item: { id },
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
-    }),
-  }));
-
-  return (
-    <div
-      ref={drag}
-      style={{
-        ...style,
-        opacity: isDragging ? 0.5 : 1,
-        cursor: "move",
-      }}
-    >
-      {name}
-    </div>
-  );
-};
-
-const DroppableGridItem = ({ id, onDrop, children, style }) => {
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: ItemTypes.NAVBAR_ITEM,
-    drop: (item) => onDrop(item.id, id),
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
-    }),
-  }));
-
-  return (
-    <div
-      ref={drop}
-      style={{
-        height: "100%",
-        backgroundColor: style.backgroundColor,
-      }}
-    >
-      {children}
-    </div>
-  );
-};
-
 function App() {
   const layout = [];
   const numberOfItems = 10; // Define the number of items
@@ -74,10 +29,56 @@ function App() {
     { id: 10, name: "item10" },
   ]);
 
+  const DraggableNavbarItem = ({ id, name, style }) => {
+    const [{ isDragging }, drag] = useDrag(() => ({
+      type: ItemTypes.NAVBAR_ITEM,
+      item: { id },
+      collect: (monitor) => ({
+        isDragging: !!monitor.isDragging(),
+      }),
+    }));
+
+    return (
+      <div
+        ref={drag}
+        style={{
+          ...style,
+          opacity: isDragging ? 0.5 : 1,
+          cursor: "move",
+        }}
+      >
+        {name}
+      </div>
+    );
+  };
+
+  const DroppableGridItem = ({ id, onDrop, children, style }) => {
+    const [{ isOver }, drop] = useDrop(() => ({
+      accept: ItemTypes.NAVBAR_ITEM,
+      drop: (item) =>  onDrop(item.id, id),
+      collect: (monitor) => ({
+        isOver: !!monitor.isOver(),
+      }),
+    }));
+
+    return (
+      <div
+        ref={drop}
+        style={{
+          height: "100%",
+          backgroundColor: style.backgroundColor,
+        }}
+      >
+        {children}
+      </div>
+    );
+  };
+
   useEffect(() => {
     var newItems = [];
     for (let i = 0; i < numberOfItems; i++) {
       newItems.push({
+        id: i,
         name: "Item " + i,
         style: {
           backgroundColor: i % 2 === 0 ? "lightblue" : "lightgreen",
@@ -88,14 +89,25 @@ function App() {
   }, []);
 
   const handleDrop = (draggedId, droppedId) => {
-    const draggedItem = navbarItems.find((item) => item.id === draggedId);
-    const newItems = items.map((item) => {
-      if (item.id === droppedId) {
-        return { ...item, name: draggedItem.name };
-      }
-      return item;
-    });
-    setItems(newItems);
+    if (draggedId <= 7 && droppedId === undefined) {
+      items.push({
+        id: items.length,
+        name: "Item " + items.length,
+        style: {
+          backgroundColor: items.length % 2 === 0 ? "lightblue" : "lightgreen",
+        },
+      });
+      setItems([...items]);
+    } else if (draggedId > 7 && droppedId !== undefined) {
+      const draggedItem = navbarItems.find((item) => item.id === draggedId);
+      const newItems = items.map((item) => {
+        if (item.id === droppedId) {
+          return { ...item, name: draggedItem.name };
+        }
+        return item;
+      });
+      setItems(newItems);
+    }
   };
 
   const convertToJson = () => {
@@ -198,33 +210,42 @@ function App() {
             </div>
           ))}
         </div>
-        <div style={{ width: "1200px" }}>
-          <GridLayout
-            className="layout"
-            layout={layout}
-            cols={12}
-            rowHeight={30}
-            isDraggable={isDrag}
-            width={1200}
-            style={{ backgroundColor: "lightgray" }}
-          >
-            {items.map((item, i) => (
-              <div
-                style={item.style}
-                onClick={() => onSelectedItem(item, i)}
-                key={i}
-                data-grid={{ x: 1, y: 1, w: 2, h: 2 }}
-              >
-                <DroppableGridItem style={item.style} id={item.id} onDrop={handleDrop}>
-                  <Compoment1 name={item.name} />
-                </DroppableGridItem>
-              </div>
-            ))}
-          </GridLayout>
-          <button onClick={convertToJson}>GetParent</button>
-          <button onClick={getItemDetails}>GetAllItems</button>
-          <button onClick={setDrag}>SetDrag</button>
-        </div>
+        <DroppableGridItem
+          style={{ backgroundColor: "lightgray" }}
+          onDrop={handleDrop}
+        >
+          <div style={{ width: "1200px" }}>
+            <GridLayout
+              className="layout"
+              layout={layout}
+              cols={12}
+              rowHeight={30}
+              isDraggable={isDrag}
+              width={1200}
+              style={{ backgroundColor: "lightgray" }}
+            >
+              {items.map((item, i) => (
+                <div
+                  style={item.style}
+                  onClick={() => onSelectedItem(item, i)}
+                  key={i}
+                  data-grid={{ x: 1, y: 1, w: 2, h: 2 }}
+                >
+                  <DroppableGridItem
+                    style={item.style}
+                    id={item.id}
+                    onDrop={handleDrop}
+                  >
+                    <Compoment1 name={item.name} />
+                  </DroppableGridItem>
+                </div>
+              ))}
+            </GridLayout>
+            <button onClick={convertToJson}>GetParent</button>
+            <button onClick={getItemDetails}>GetAllItems</button>
+            <button onClick={setDrag}>SetDrag</button>
+          </div>
+        </DroppableGridItem>
       </div>
     </DndProvider>
   );
