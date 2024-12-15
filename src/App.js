@@ -4,7 +4,8 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import React, { useState, useEffect } from "react";
 import GridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
-import Compoment1 from "./Components/Compoment1";
+import {Compoment1} from "./Components/Compoment1";
+import App1 from "./Components/GridLayoutNested";
 
 const ItemTypes = {
   NAVBAR_ITEM: "navbarItem",
@@ -12,6 +13,7 @@ const ItemTypes = {
 
 const DraggableNavbarItem = ({ id, name, style }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
+    
     type: ItemTypes.NAVBAR_ITEM,
     item: { id },
     collect: (monitor) => ({
@@ -189,44 +191,45 @@ function App() {
   };
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="parent">
-        <div className="navbar">
-          {navbarItems.map((item) => (
-            <div className="navbar vertical" key={item.id}>
-              <DraggableNavbarItem id={item.id} name={item.name} />
-            </div>
-          ))}
-        </div>
-        <div style={{ width: "1200px" }}>
-          <GridLayout
-            className="layout"
-            layout={layout}
-            cols={12}
-            rowHeight={30}
-            isDraggable={isDrag}
-            width={1200}
-            style={{ backgroundColor: "lightgray" }}
-          >
-            {items.map((item, i) => (
-              <div
-                style={item.style}
-                onClick={() => onSelectedItem(item, i)}
-                key={i}
-                data-grid={{ x: 1, y: 1, w: 2, h: 2 }}
-              >
-                <DroppableGridItem style={item.style} id={item.id} onDrop={handleDrop}>
-                  <Compoment1 name={item.name} />
-                </DroppableGridItem>
-              </div>
-            ))}
-          </GridLayout>
-          <button onClick={convertToJson}>GetParent</button>
-          <button onClick={getItemDetails}>GetAllItems</button>
-          <button onClick={setDrag}>SetDrag</button>
-        </div>
-      </div>
-    </DndProvider>
+    // <DndProvider backend={HTML5Backend}>
+    //   <div className="parent">
+    //     <div className="navbar">
+    //       {navbarItems.map((item) => (
+    //         <div className="navbar vertical" key={item.id}>
+    //           <DraggableNavbarItem id={item.id} name={item.name} />
+    //         </div>
+    //       ))}
+    //     </div>
+    //     <div style={{ width: "1200px" }}>
+    //       <GridLayout
+    //         className="layout"
+    //         layout={layout}
+    //         cols={12}
+    //         rowHeight={30}
+    //         isDraggable={isDrag}
+    //         width={1200}
+    //         style={{ backgroundColor: "lightgray" }}
+    //       >
+    //         {items.map((item, i) => (
+    //           <div
+    //             style={item.style}
+    //             onClick={() => onSelectedItem(item, i)}
+    //             key={i}
+    //             data-grid={{ x: 1, y: 1, w: 2, h: 2 }}
+    //           >
+    //             <DroppableGridItem style={item.style} id={item.id} onDrop={handleDrop}>
+    //               <Compoment1 name={item.name} />
+    //             </DroppableGridItem>
+    //           </div>
+    //         ))}
+    //       </GridLayout>
+    //       <button onClick={convertToJson}>GetParent</button>
+    //       <button onClick={getItemDetails}>GetAllItems</button>
+    //       <button onClick={setDrag}>SetDrag</button>
+    //     </div>
+    //   </div>
+    // </DndProvider>
+    <App1 />
   );
 }
 
