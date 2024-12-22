@@ -1,233 +1,256 @@
-import "./App.css";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import React, { useState, useEffect } from "react";
-import GridLayout from "react-grid-layout";
-import "react-grid-layout/css/styles.css";
-import Compoment1 from "./Components/Compoment1";
+import React from 'react';
+import _ from 'lodash';
+import { Responsive, WidthProvider } from 'react-grid-layout';
+import { v4 as uuidv4 } from 'uuid';
 
-const ItemTypes = {
-  NAVBAR_ITEM: "navbarItem",
-};
+import './App.css';
 
-const DraggableNavbarItem = ({ id, name, style }) => {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: ItemTypes.NAVBAR_ITEM,
-    item: { id },
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
-    }),
-  }));
+const ResponsiveReactGridLayout = WidthProvider(Responsive);
 
+const items = [
+  {
+    id: uuidv4(),
+    type: 'Type 1',
+  },
+  {
+    id: uuidv4(),
+    type: 'Type 2',
+  },
+  {
+    id: uuidv4(),
+    type: 'Type 3',
+  },
+];
+
+function generateLayout(items) {
+  return items.map(({ id, type }, i) => {
+    var y = Math.ceil(Math.random() * 4) + 1;
+    return {
+      x: Math.round(Math.random() * 5) * 2,
+      y: Math.floor(i / 6) * y,
+      w: 2,
+      h: y,
+      i: id,
+      type,
+    };
+  });
+}
+
+const toolboxItems = [
+  { type: 'Box 0', w: 3, h: 3 },
+  { type: 'Box zzz', w: 2, h: 2 },
+  { type: 'Box a', w: 1, h: 1 },
+];
+
+const ToolboxItem = (props) => {
+  const { toolboxItem, onDragStart } = props;
+  const { type } = toolboxItem;
   return (
     <div
-      ref={drag}
-      style={{
-        ...style,
-        opacity: isDragging ? 0.5 : 1,
-        cursor: "move",
-      }}
+      draggable={true}
+      className="toolbox-item"
+      key={type}
+      onDragStart={onDragStart}
     >
-      {name}
+      {type}
     </div>
   );
 };
 
-const DroppableGridItem = ({ id, onDrop, children, style }) => {
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: ItemTypes.NAVBAR_ITEM,
-    drop: (item) => onDrop(item.id, id),
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
-    }),
-  }));
-
+function boxIntersect(box1, box2) {
   return (
-    <div
-      ref={drop}
-      style={{
-        height: "100%",
-        backgroundColor: style.backgroundColor,
-      }}
-    >
-      {children}
-    </div>
+    Math.max(box1.x, box2.x) < Math.min(box1.x + box1.w, box2.x + box2.w) &&
+    Math.max(box1.y, box2.y) < Math.min(box1.y + box1.h, box2.y + box2.h)
   );
-};
+}
 
-function App() {
-  const layout = [];
-  const numberOfItems = 10; // Define the number of items
-  const [items, setItems] = useState([]);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [isDrag, setIsDrag] = useState(true);
-  const [navbarItems, setNavbarItems] = useState([
-    { id: 1, name: "item1" },
-    { id: 2, name: "item2" },
-    { id: 3, name: "item3" },
-    { id: 4, name: "item4" },
-    { id: 5, name: "item5" },
-    { id: 6, name: "item6" },
-    { id: 7, name: "item7" },
-    { id: 8, name: "item8" },
-    { id: 9, name: "item9" },
-    { id: 10, name: "item10" },
-  ]);
-
-  useEffect(() => {
-    var newItems = [];
-    for (let i = 0; i < numberOfItems; i++) {
-      newItems.push({
-        name: "Item " + i,
-        style: {
-          backgroundColor: i % 2 === 0 ? "lightblue" : "lightgreen",
-        },
-      });
-    }
-    setItems(newItems);
-  }, []);
-
-  const handleDrop = (draggedId, droppedId) => {
-    const draggedItem = navbarItems.find((item) => item.id === draggedId);
-    const newItems = items.map((item) => {
-      if (item.id === droppedId) {
-        return { ...item, name: draggedItem.name };
+function bfs(items, newItem) {
+  const q = [newItem];
+  const newLayouts = [newItem];
+  const visited = {};
+  while (q.length) {
+    for (let size = q.length; size > 0; --size) {
+      const it = q.shift();
+      for (let item of items) {
+        if (boxIntersect(item, it) && !visited[item.i]) {
+          visited[item.i] = true;
+          const pushedItem = { ...item, y: it.y + it.h };
+          q.push(pushedItem);
+          newLayouts.push(pushedItem);
+        }
       }
-      return item;
-    });
-    setItems(newItems);
+    }
+  }
+  for (let item of items) {
+    if (!visited[item.i]) {
+      newLayouts.push(item);
+    }
+  }
+  return newLayouts;
+}
+
+class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      isEditing: false,
+      items,
+      layouts: { lg: generateLayout(items) },
+      toolboxItem: null,
+      breakpoint: 'lg',
+      nextId: uuidv4(),
+    };
+  }
+
+  stopPropagation = (event) => {
+    event.stopPropagation();
   };
 
-  const convertToJson = () => {
-    // Hàm để lấy thông tin vị trí, kích thước, loại thẻ HTML và màu sắc của các widget và in ra JSON
-    const items = document.querySelectorAll(".react-grid-layout");
-    const itemsArray = Array.from(items).map((node) => {
-      const rect = node.getBoundingClientRect();
-      const backgroundColor = window.getComputedStyle(node).backgroundColor;
-
-      return {
-        x: parseInt(node.getAttribute("data-grid-x")),
-        y: parseInt(node.getAttribute("data-grid-y")),
-        width: rect.width,
-        height: rect.height,
-        backgroundColor: backgroundColor,
-      };
+  resolver = () =>
+    JSON.stringify({
+      layouts: this.state.layouts,
+      isEditing: this.state.isEditing,
+      breakpoint: this.state.breakpoint,
     });
-    const layoutJson = JSON.stringify(itemsArray, null, 2);
-    console.log(layoutJson);
+
+  memoizedItems = _.memoize(() => {
+    const { layouts, breakpoint } = this.state;
+    return layouts[breakpoint].map(({ i, type }) => (
+      <div key={i}>
+        <div style={{ fontSize: 12 }}>id: {i}</div>
+        <div style={{ fontWeight: 'bold' }}>I am {type}</div>
+        <button onClick={this.onSelectedItem()} onTouchEnd={this.onSelectedItem}> Edit </button>
+      </div>
+    ));
+  }, this.resolver);
+
+    // Selected Item
+  onSelectedItem = () => {
+      console.log("Selected Item");
   };
+  
 
-  // Hàm để lấy thông tin chi tiết của tất cả các widget có cùng tên và các phần tử con bên trong
-  const getItemDetails = (name) => {
-    const elements = Array.from(document.querySelectorAll(".react-grid-item"));
-    const itemsDetails = elements.map((element) => {
-      const rect = element.getBoundingClientRect();
-      const tagName = element.tagName.toLowerCase();
-      const backgroundColor = window.getComputedStyle(element).backgroundColor;
-
-      // Tạo object chứa thông tin chi tiết của thẻ cha
-      const itemDetails = {
-        id: element.id,
-        width: rect.width,
-        height: rect.height,
-        top: rect.top,
-        bottom: rect.bottom,
-        left: rect.left,
-        right: rect.right,
-        tagName: tagName,
-        backgroundColor: backgroundColor,
-        children: [], // Mảng chứa thông tin các thẻ con
-      };
-
-      // Lấy thông tin chi tiết của các phần tử con
-      const children = element.querySelectorAll(".resizable");
-      children.forEach((child) => {
-        const childRect = child.getBoundingClientRect();
-        const childTagName = child.tagName.toLowerCase();
-        const childBackgroundColor =
-          window.getComputedStyle(child).backgroundColor;
-
-        // Tính toán vị trí của thẻ con dựa trên thẻ cha
-        const childTop = childRect.top - rect.top;
-        const childBottom = childRect.bottom - rect.top;
-        const childLeft = childRect.left - rect.left;
-        const childRight = childRect.right - rect.left;
-
-        // Thêm thông tin của thẻ con vào mảng children
-        itemDetails.children.push({
-          tagName: childTagName,
-          width: childRect.width,
-          height: childRect.height,
-          top: childTop,
-          bottom: childBottom,
-          left: childLeft,
-          right: childRight,
-          backgroundColor: childBackgroundColor,
-        });
+  handleDrop = (layout, item, e) => {
+    const { toolboxItem, layouts } = this.state;
+    const { type } = toolboxItem;
+    const newLayouts = _.cloneDeep(layouts);
+    const newItem = {
+      ...item,
+      type,
+      isDraggable: undefined,
+      isResizable: undefined,
+    };
+    Object.keys(newLayouts).map((size) => {
+      /*
+      const items = newLayouts[size].map(item => {
+        if (boxIntersect(item, newItem)) {
+          return {...item, y: newItem.y+newItem.h};
+        }
+        return item;
       });
+      newLayouts[size] = [newItem, ...items];
+      */
+      newLayouts[size] = bfs(newLayouts[size], newItem);
+    });
+    this.setState({ layouts: newLayouts, nextId: uuidv4() });
+    this.dropping = true;
+  };
 
-      return itemDetails;
+  handleDragStart = (item, e) => {
+    this.setState({ toolboxItem: item });
+  };
+
+  getDroppingItem = () => {
+    const { toolboxItem, nextId } = this.state;
+    if (!toolboxItem) {
+      return null;
+    }
+    return { ...toolboxItem, i: nextId };
+  };
+
+  handleEditing = (e) => {
+    this.setState({ isEditing: e.target.checked });
+  };
+
+  handleLayoutChange = (layout, layouts) => {
+    if (this.dropping) {
+      return;
+    }
+
+    const { nextId } = this.state;
+    if (layout.find(({ i }) => i === nextId)) {
+      return;
+    }
+
+    const newLayouts = _.cloneDeep(layouts);
+    Object.keys(newLayouts).map((size) => {
+      newLayouts[size] = newLayouts[size].map((item, index) => {
+        const original = this.state.layouts[size] || this.state.layouts.lg;
+        return { ...original[index], ...item };
+      });
     });
 
-    // In object dưới dạng JSON
-    console.log(JSON.stringify(itemsDetails, null, 2));
+    this.setState({ layouts: newLayouts });
   };
 
-  const setDrag = () => {
-    setIsDrag(!isDrag);
-  };
+  handleBreakpointChange = (breakpoint) => this.setState({ breakpoint });
 
-  // Selected Item in GridLayout
-  const onSelectedItem = (item, i) => {
-    var newItem = item;
-    newItem.style.backgroundColor = "red";
-    var newItems = items.map((item, index) => (i === index ? newItem : item));
-    setItems(newItems);
-    setSelectedItem(i);
-    console.log("Selected Item: ", item);
-    console.log("items: ", items);
-  };
-
-  return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="parent">
-        <div className="navbar">
-          {navbarItems.map((item) => (
-            <div className="navbar vertical" key={item.id}>
-              <DraggableNavbarItem id={item.id} name={item.name} />
-            </div>
+  render() {
+    const { layouts, isEditing, breakpoint } = this.state;
+    const droppingItem = this.getDroppingItem();
+    this.dropping = false;
+    return (
+      <div>
+        <div style={{ marginBottom: 10 }}>
+          <input
+            type="checkbox"
+            value={isEditing}
+            onChange={this.handleEditing}
+          />
+          {isEditing ? 'Editing' : 'Not Allow To Edit'}
+        </div>
+        <div
+          style={{
+            marginBottom: 20,
+            border: '1px solid skyblue',
+            padding: 20,
+            display: 'flex',
+            flexWrap: 'wrap',
+          }}
+        >
+          {toolboxItems.map((item) => (
+            <ToolboxItem
+              key={item.type}
+              toolboxItem={item}
+              onDragStart={(e) => this.handleDragStart(item, e)}
+            />
           ))}
         </div>
-        <div style={{ width: "1200px" }}>
-          <GridLayout
-            className="layout"
-            layout={layout}
-            cols={12}
-            rowHeight={30}
-            isDraggable={isDrag}
-            width={1200}
-            style={{ backgroundColor: "lightgray" }}
-          >
-            {items.map((item, i) => (
-              <div
-                style={item.style}
-                onClick={() => onSelectedItem(item, i)}
-                key={i}
-                data-grid={{ x: 1, y: 1, w: 2, h: 2 }}
-              >
-                <DroppableGridItem style={item.style} id={item.id} onDrop={handleDrop}>
-                  <Compoment1 name={item.name} />
-                </DroppableGridItem>
-              </div>
-            ))}
-          </GridLayout>
-          <button onClick={convertToJson}>GetParent</button>
-          <button onClick={getItemDetails}>GetAllItems</button>
-          <button onClick={setDrag}>SetDrag</button>
-        </div>
+        <ResponsiveReactGridLayout
+          className="layout"
+          rowHeight={60}
+          layouts={layouts}
+          isDroppable={true}
+          isDraggable={isEditing}
+          isResizable={isEditing}
+          onDrop={this.handleDrop}
+          droppingItem={droppingItem}
+          // preventCollision={true}
+          // isBounded={true}
+          onLayoutChange={this.handleLayoutChange}
+          onBreakpointChange={this.handleBreakpointChange}
+        >
+          {this.memoizedItems()}
+          {/*layouts[breakpoint].map(({ i, type }) => (
+            <div key={i}>
+              <div style={{ fontSize: 12 }}>id: {i}</div>
+              <div style={{ fontWeight: "bold" }}>I am {type}</div>
+            </div>
+          ))*/}
+        </ResponsiveReactGridLayout>
       </div>
-    </DndProvider>
-  );
+    );
+  }
 }
 
 export default App;
