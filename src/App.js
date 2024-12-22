@@ -1,6 +1,6 @@
 import React from 'react';
 import _ from 'lodash';
-import { Responsive, WidthProvider } from 'react-grid-layout';
+import { Responsive, WidthProvider, } from 'react-grid-layout';
 import { v4 as uuidv4 } from 'uuid';
 
 import './App.css';
@@ -38,8 +38,16 @@ function generateLayout(items) {
 
 const toolboxItems = [
   { type: 'Box 0', w: 3, h: 3 },
-  { type: 'Box zzz', w: 2, h: 2 },
-  { type: 'Box a', w: 1, h: 1 },
+  { type: 'Box 1', w: 2, h: 2 },
+  { type: 'Box 2', w: 3, h: 2 },
+  { type: 'Box 3', w: 3, h: 2 },
+  { type: 'Box 4', w: 3, h: 2 },
+  { type: 'Box 5', w: 3, h: 2 },
+  { type: 'Box 6', w: 3, h: 2 },
+  { type: 'Box 7', w: 3, h: 2 },
+  { type: 'Box 8', w: 3, h: 2 },
+  { type: 'Box 9', w: 3, h: 2 },
+  { type: 'Box 10', w: 3, h: 2 },
 ];
 
 const ToolboxItem = (props) => {
@@ -95,7 +103,7 @@ class App extends React.Component {
     this.state = {
       isEditing: false,
       items,
-      layouts: { lg: generateLayout(items) },
+      layouts: { lg: [] },
       toolboxItem: null,
       breakpoint: 'lg',
       nextId: uuidv4(),
@@ -124,11 +132,11 @@ class App extends React.Component {
     ));
   }, this.resolver);
 
-    // Selected Item
+  // Selected Item
   onSelectedItem = () => {
-      console.log("Selected Item");
+    console.log("Selected Item");
   };
-  
+
 
   handleDrop = (layout, item, e) => {
     const { toolboxItem, layouts } = this.state;
@@ -200,15 +208,7 @@ class App extends React.Component {
     const droppingItem = this.getDroppingItem();
     this.dropping = false;
     return (
-      <div>
-        <div style={{ marginBottom: 10 }}>
-          <input
-            type="checkbox"
-            value={isEditing}
-            onChange={this.handleEditing}
-          />
-          {isEditing ? 'Editing' : 'Not Allow To Edit'}
-        </div>
+      <div style={{display: 'flex', flexDirection: 'row', justifyContent:'start'}}>
         <div
           style={{
             marginBottom: 20,
@@ -216,6 +216,7 @@ class App extends React.Component {
             padding: 20,
             display: 'flex',
             flexWrap: 'wrap',
+            flexDirection:'column'
           }}
         >
           {toolboxItems.map((item) => (
@@ -230,9 +231,10 @@ class App extends React.Component {
           className="layout"
           rowHeight={60}
           layouts={layouts}
+          style={{width:'1200px', height:'1200px'}}
           isDroppable={true}
-          isDraggable={isEditing}
-          isResizable={isEditing}
+          isDraggable={true}
+          isResizable={true}
           onDrop={this.handleDrop}
           droppingItem={droppingItem}
           // preventCollision={true}
@@ -240,13 +242,19 @@ class App extends React.Component {
           onLayoutChange={this.handleLayoutChange}
           onBreakpointChange={this.handleBreakpointChange}
         >
-          {this.memoizedItems()}
-          {/*layouts[breakpoint].map(({ i, type }) => (
+          {/* {this.memoizedItems()} */}
+          {
+           layouts[breakpoint].map(({ i, type }) => (
             <div key={i}>
-              <div style={{ fontSize: 12 }}>id: {i}</div>
-              <div style={{ fontWeight: "bold" }}>I am {type}</div>
+              <div>
+                <div style={{ fontSize: 12 }}>id: {i}</div>
+                <div style={{ fontWeight: "bold" }}>I am {type}</div>
+                <button
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={this.onSelectedItem}>Edit</button>
+              </div> 
             </div>
-          ))*/}
+          ))}
         </ResponsiveReactGridLayout>
       </div>
     );
