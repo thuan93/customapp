@@ -2,6 +2,7 @@ import React from 'react';
 import _ from 'lodash';
 import { Responsive, WidthProvider, } from 'react-grid-layout';
 import { v4 as uuidv4 } from 'uuid';
+import { useNavigate } from 'react-router-dom'
 
 import './App.css';
 
@@ -22,19 +23,6 @@ const items = [
   },
 ];
 
-function generateLayout(items) {
-  return items.map(({ id, type }, i) => {
-    var y = Math.ceil(Math.random() * 4) + 1;
-    return {
-      x: Math.round(Math.random() * 5) * 2,
-      y: Math.floor(i / 6) * y,
-      w: 2,
-      h: y,
-      i: id,
-      type,
-    };
-  });
-}
 
 const toolboxItems = [
   { type: 'Box 0', w: 3, h: 3 },
@@ -108,8 +96,15 @@ class App extends React.Component {
       breakpoint: 'lg',
       nextId: uuidv4(),
     };
+    this.onSelectedItem = this.onSelectedItem.bind(this)
+
   }
 
+  onSelectedItem(props){
+    const item = this.state.layouts.lg.find(f=>f.i == props)
+    
+    this.props.navigate('/Secondpage', { state: { id: props, item: item } });
+  }
   stopPropagation = (event) => {
     event.stopPropagation();
   };
@@ -120,22 +115,6 @@ class App extends React.Component {
       isEditing: this.state.isEditing,
       breakpoint: this.state.breakpoint,
     });
-
-  memoizedItems = _.memoize(() => {
-    const { layouts, breakpoint } = this.state;
-    return layouts[breakpoint].map(({ i, type }) => (
-      <div key={i}>
-        <div style={{ fontSize: 12 }}>id: {i}</div>
-        <div style={{ fontWeight: 'bold' }}>I am {type}</div>
-        <button onClick={this.onSelectedItem()} onTouchEnd={this.onSelectedItem}> Edit </button>
-      </div>
-    ));
-  }, this.resolver);
-
-  // Selected Item
-  onSelectedItem = () => {
-    console.log("Selected Item");
-  };
 
 
   handleDrop = (layout, item, e) => {
@@ -149,15 +128,6 @@ class App extends React.Component {
       isResizable: undefined,
     };
     Object.keys(newLayouts).map((size) => {
-      /*
-      const items = newLayouts[size].map(item => {
-        if (boxIntersect(item, newItem)) {
-          return {...item, y: newItem.y+newItem.h};
-        }
-        return item;
-      });
-      newLayouts[size] = [newItem, ...items];
-      */
       newLayouts[size] = bfs(newLayouts[size], newItem);
     });
     this.setState({ layouts: newLayouts, nextId: uuidv4() });
@@ -250,8 +220,10 @@ class App extends React.Component {
                 <div style={{ fontSize: 12 }}>id: {i}</div>
                 <div style={{ fontWeight: "bold" }}>I am {type}</div>
                 <button
-                  onMouseDown={e => e.stopPropagation()}
-                  onClick={this.onSelectedItem}>Edit</button>
+                  onMouseDown={e => {
+                    e.stopPropagation()
+                    this.onSelectedItem(i)
+                  } }>Edit</button>
               </div> 
             </div>
           ))}
