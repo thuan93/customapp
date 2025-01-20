@@ -1,4 +1,3 @@
-import { Component } from "react";
 import { useLocation } from "react-router-dom";
 function Secondpage() {
     const location = useLocation();

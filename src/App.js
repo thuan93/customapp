@@ -2,8 +2,6 @@ import React from 'react';
 import _ from 'lodash';
 import { Responsive, WidthProvider, } from 'react-grid-layout';
 import { v4 as uuidv4 } from 'uuid';
-import { useNavigate } from 'react-router-dom'
-
 import './App.css';
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
@@ -101,10 +99,22 @@ class App extends React.Component {
   }
 
   onSelectedItem(props){
-    const item = this.state.layouts.lg.find(f=>f.i == props)
+    const item = this.state.layouts.lg.find(f=>f.i === props)
     
     this.props.navigate('/Secondpage', { state: { id: props, item: item } });
   }
+
+  componentDidMount() {
+    const savedState = localStorage.getItem('appState');
+    if (savedState) {
+      this.setState(JSON.parse(savedState));
+    }
+  }
+
+  componentWillUnmount() {
+    localStorage.setItem('appState', JSON.stringify(this.state));
+  }
+
   stopPropagation = (event) => {
     event.stopPropagation();
   };
