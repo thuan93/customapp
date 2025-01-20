@@ -1,39 +1,39 @@
-import React from 'react';
-import _ from 'lodash';
-import { Responsive, WidthProvider, } from 'react-grid-layout';
-import { v4 as uuidv4 } from 'uuid';
-import './App.css';
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import _ from "lodash";
+import { Responsive, WidthProvider } from "react-grid-layout";
+import { v4 as uuidv4 } from "uuid";
+import "./App.css";
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
 
 const items = [
   {
     id: uuidv4(),
-    type: 'Type 1',
+    type: "Type 1",
   },
   {
     id: uuidv4(),
-    type: 'Type 2',
+    type: "Type 2",
   },
   {
     id: uuidv4(),
-    type: 'Type 3',
+    type: "Type 3",
   },
 ];
 
-
 const toolboxItems = [
-  { type: 'Box 0', w: 3, h: 3 },
-  { type: 'Box 1', w: 2, h: 2 },
-  { type: 'Box 2', w: 3, h: 2 },
-  { type: 'Box 3', w: 3, h: 2 },
-  { type: 'Box 4', w: 3, h: 2 },
-  { type: 'Box 5', w: 3, h: 2 },
-  { type: 'Box 6', w: 3, h: 2 },
-  { type: 'Box 7', w: 3, h: 2 },
-  { type: 'Box 8', w: 3, h: 2 },
-  { type: 'Box 9', w: 3, h: 2 },
-  { type: 'Box 10', w: 3, h: 2 },
+  { type: "Box 0", w: 3, h: 3 },
+  { type: "Box 1", w: 2, h: 2 },
+  { type: "Box 2", w: 3, h: 2 },
+  { type: "Box 3", w: 3, h: 2 },
+  { type: "Box 4", w: 3, h: 2 },
+  { type: "Box 5", w: 3, h: 2 },
+  { type: "Box 6", w: 3, h: 2 },
+  { type: "Box 7", w: 3, h: 2 },
+  { type: "Box 8", w: 3, h: 2 },
+  { type: "Box 9", w: 3, h: 2 },
+  { type: "Box 10", w: 3, h: 2 },
 ];
 
 const ToolboxItem = (props) => {
@@ -83,52 +83,35 @@ function bfs(items, newItem) {
   return newLayouts;
 }
 
-class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isEditing: false,
-      items,
-      layouts: { lg: [] },
-      toolboxItem: null,
-      breakpoint: 'lg',
-      nextId: uuidv4(),
-    };
-    this.onSelectedItem = this.onSelectedItem.bind(this)
+function App() {
+  const [layouts, setLayouts] = useState({ lg: [] });
+  const [isEditing, setIsEditing] = useState(false);
+  const [toolboxItem, setToolboxItem] = useState(null);
+  const [breakpoint, setBreakpoint] = useState("lg");
+  const [nextId, setNextId] = useState(uuidv4());
+  const navigate = useNavigate();
 
-  }
+  const onSelectedItem = (props) => {
+    const item = layouts.lg.find((f) => f.i === props);
 
-  onSelectedItem(props){
-    const item = this.state.layouts.lg.find(f=>f.i === props)
-    
-    this.props.navigate('/Secondpage', { state: { id: props, item: item } });
-  }
-
-  componentDidMount() {
-    const savedState = localStorage.getItem('appState');
-    if (savedState) {
-      this.setState(JSON.parse(savedState));
-    }
-  }
-
-  componentWillUnmount() {
-    localStorage.setItem('appState', JSON.stringify(this.state));
-  }
-
-  stopPropagation = (event) => {
-    event.stopPropagation();
+    navigate("/Secondpage", { state: { id: props, item: item } });
   };
 
-  resolver = () =>
-    JSON.stringify({
-      layouts: this.state.layouts,
-      isEditing: this.state.isEditing,
-      breakpoint: this.state.breakpoint,
-    });
+  // useEffect(() => {
+  //   const savedState = localStorage.getItem("appState");
+  //   if (savedState) {
+  //     setLayouts(JSON.parse(savedState));
+  //   }
+  // }, []);
 
+  // useEffect(() => {
+  //   localStorage.setItem(
+  //     "appState",
+  //     JSON.stringify({ layouts, isEditing, breakpoint })
+  //   );
+  // }, [layouts, isEditing, breakpoint]);
 
-  handleDrop = (layout, item, e) => {
-    const { toolboxItem, layouts } = this.state;
+  const handleDrop = (layout, item, e) => {
     const { type } = toolboxItem;
     const newLayouts = _.cloneDeep(layouts);
     const newItem = {
@@ -137,110 +120,112 @@ class App extends React.Component {
       isDraggable: undefined,
       isResizable: undefined,
     };
-    Object.keys(newLayouts).map((size) => {
+    Object.keys(newLayouts).forEach((size) => {
       newLayouts[size] = bfs(newLayouts[size], newItem);
     });
-    this.setState({ layouts: newLayouts, nextId: uuidv4() });
-    this.dropping = true;
+    setLayouts(newLayouts);
+    setNextId(uuidv4());
+    dropping = true;
   };
 
-  handleDragStart = (item, e) => {
-    this.setState({ toolboxItem: item });
+  const handleDragStart = (item, e) => {
+    setToolboxItem(item);
   };
 
-  getDroppingItem = () => {
-    const { toolboxItem, nextId } = this.state;
+  const getDroppingItem = () => {
     if (!toolboxItem) {
       return null;
     }
     return { ...toolboxItem, i: nextId };
   };
 
-  handleEditing = (e) => {
-    this.setState({ isEditing: e.target.checked });
+  const handleEditing = (e) => {
+    setIsEditing(e.target.checked);
   };
 
-  handleLayoutChange = (layout, layouts) => {
-    if (this.dropping) {
+  const handleLayoutChange = (layout, layouts) => {
+    if (dropping) {
       return;
     }
 
-    const { nextId } = this.state;
     if (layout.find(({ i }) => i === nextId)) {
       return;
     }
 
     const newLayouts = _.cloneDeep(layouts);
-    Object.keys(newLayouts).map((size) => {
+    Object.keys(newLayouts).forEach((size) => {
       newLayouts[size] = newLayouts[size].map((item, index) => {
-        const original = this.state.layouts[size] || this.state.layouts.lg;
+        const original = layouts[size] || layouts.lg;
         return { ...original[index], ...item };
       });
     });
 
-    this.setState({ layouts: newLayouts });
+    setLayouts(newLayouts);
   };
 
-  handleBreakpointChange = (breakpoint) => this.setState({ breakpoint });
+  const handleBreakpointChange = (breakpoint) => setBreakpoint(breakpoint);
 
-  render() {
-    const { layouts, isEditing, breakpoint } = this.state;
-    const droppingItem = this.getDroppingItem();
-    this.dropping = false;
-    return (
-      <div style={{display: 'flex', flexDirection: 'row', justifyContent:'start'}}>
-        <div
-          style={{
-            marginBottom: 20,
-            border: '1px solid skyblue',
-            padding: 20,
-            display: 'flex',
-            flexWrap: 'wrap',
-            flexDirection:'column'
-          }}
-        >
-          {toolboxItems.map((item) => (
-            <ToolboxItem
-              key={item.type}
-              toolboxItem={item}
-              onDragStart={(e) => this.handleDragStart(item, e)}
-            />
-          ))}
-        </div>
-        <ResponsiveReactGridLayout
-          className="layout"
-          rowHeight={60}
-          layouts={layouts}
-          style={{width:'1200px', height:'1200px'}}
-          isDroppable={true}
-          isDraggable={true}
-          isResizable={true}
-          onDrop={this.handleDrop}
-          droppingItem={droppingItem}
-          // preventCollision={true}
-          // isBounded={true}
-          onLayoutChange={this.handleLayoutChange}
-          onBreakpointChange={this.handleBreakpointChange}
-        >
-          {/* {this.memoizedItems()} */}
-          {
-           layouts[breakpoint].map(({ i, type }) => (
-            <div key={i}>
-              <div>
-                <div style={{ fontSize: 12 }}>id: {i}</div>
-                <div style={{ fontWeight: "bold" }}>I am {type}</div>
-                <button
-                  onMouseDown={e => {
-                    e.stopPropagation()
-                    this.onSelectedItem(i)
-                  } }>Edit</button>
-              </div> 
-            </div>
-          ))}
-        </ResponsiveReactGridLayout>
+  let dropping = false;
+  return (
+    <div
+      style={{ display: "flex", flexDirection: "row", justifyContent: "start" }}
+    >
+      <div
+        style={{
+          marginBottom: 20,
+          border: "1px solid skyblue",
+          padding: 20,
+          display: "flex",
+          flexWrap: "wrap",
+          flexDirection: "column",
+        }}
+      >
+        {toolboxItems.map((item) => (
+          <ToolboxItem
+            key={item.type}
+            toolboxItem={item}
+            onDragStart={(e) => handleDragStart(item, e)}
+          />
+        ))}
       </div>
-    );
-  }
+      <ResponsiveReactGridLayout
+        className="layout"
+        rowHeight={60}
+        layouts={layouts}
+        width={1200}
+        style={{ width: "1200px", height: "1200px" }}
+        isDroppable={true}
+        isDraggable={true}
+        isResizable={true}
+        onDrop={handleDrop}
+        droppingItem={getDroppingItem()}
+        // preventCollision={true}
+        // isBounded={true}
+        onLayoutChange={handleLayoutChange}
+        onBreakpointChange={handleBreakpointChange}
+      >
+        {/* {this.memoizedItems()} */}
+        {layouts[breakpoint].map(({ i, type }) => (
+          <div
+            key={i}
+          >
+            <div>
+              <div style={{ fontSize: 12 }}>id: {i}</div>
+              <div style={{ fontWeight: "bold" }}>I am {type}</div>
+              <button
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  onSelectedItem(i);
+                }}
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+        ))}
+      </ResponsiveReactGridLayout>
+    </div>
+  );
 }
 
 export default App;
